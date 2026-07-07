@@ -5,12 +5,72 @@
 }
 
 .container {
-  padding: 2rem;
+  padding: 1.5rem 2rem;
+}
+
+h1 {
+  font-size: 1.2rem;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 320px;
+}
+
+.settings-form label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.settings-form input[type="number"] {
+  width: 5rem;
+  padding: 0.3rem 0.4rem;
+}
+
+.settings-form label.checkbox {
+  justify-content: flex-start;
+  gap: 0.5rem;
+}
+
+.settings-form button {
+  margin-top: 0.5rem;
+  padding: 0.4rem;
+}
+
+.status {
+  margin: 0;
+  color: #2e7d32;
+}
+
+.status.error {
+  color: #c62828;
+}
+
+.note {
+  margin-top: 1.5rem;
+  font-size: 0.85rem;
+  color: #666;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     color: #f6f6f6;
     background-color: #2f2f2f;
+  }
+
+  .note {
+    color: #aaa;
+  }
+
+  .status {
+    color: #81c784;
+  }
+
+  .status.error {
+    color: #e57373;
   }
 }
