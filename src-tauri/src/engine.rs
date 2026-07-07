@@ -6,9 +6,12 @@ use std::{
     time::{Duration, Instant},
 };
 
+use chrono::{DateTime, Local};
 use tauri::{menu::MenuItem, AppHandle, Manager, Wry};
 
 use crate::{
+    history::HistoryWriter,
+    notify,
     timer::{Status, Timer},
     tray,
 };
@@ -24,6 +27,10 @@ pub struct AppState {
     pub timer: Mutex<Timer>,
     /// 開始 / 一時停止 / 再開 を状態に応じて差し替えるトグル項目
     pub toggle_item: MenuItem<Wry>,
+    pub history: HistoryWriter,
+    /// 進行中セッションの開始時刻 (履歴記録用の wall-clock)。
+    /// Running/Paused 中のみ Some。timer の後にロックすること (ロック順固定)
+    pub session_started_at: Mutex<Option<DateTime<Local>>>,
 }
 
 pub fn handle_menu_event(app: &AppHandle, id: &str) {
@@ -38,12 +45,27 @@ pub fn handle_menu_event(app: &AppHandle, id: &str) {
 
     match id {
         MENU_TOGGLE => match timer.status() {
-            Status::Idle => timer.start(now),
+            Status::Idle => {
+                timer.start(now);
+                *state.session_started_at.lock().unwrap() = Some(Local::now());
+            }
             Status::Running => timer.pause(now),
             Status::Paused => timer.resume(now),
         },
-        MENU_SKIP => timer.skip(),
-        MENU_RESET => timer.reset(),
+        MENU_SKIP | MENU_RESET => {
+            // 走り出していたセッションの破棄は completed=false で記録する
+            let abandoned_phase = timer.phase();
+            if let Some(started) = state.session_started_at.lock().unwrap().take() {
+                state
+                    .history
+                    .append(abandoned_phase, started, Local::now(), false);
+            }
+            if id == MENU_SKIP {
+                timer.skip();
+            } else {
+                timer.reset();
+            }
+        }
         _ => {}
     }
 
@@ -60,8 +82,20 @@ pub fn spawn_ticker(app: AppHandle) {
         let now = Instant::now();
         let mut timer = state.timer.lock().unwrap();
 
-        if let Some(_completed) = timer.poll(now) {
-            // PR3: ここでセッション終了通知と履歴記録を行う
+        if let Some(completed) = timer.poll(now) {
+            let ended_at = Local::now();
+            let mut session = state.session_started_at.lock().unwrap();
+            if let Some(started) = session.take() {
+                state
+                    .history
+                    .append(completed.finished, started, ended_at, true);
+            }
+            if completed.auto_started {
+                *session = Some(ended_at);
+            }
+            drop(session);
+
+            notify::session_finished(&app, &completed);
         }
 
         sync_ui(&app, &timer, &state.toggle_item, now);
