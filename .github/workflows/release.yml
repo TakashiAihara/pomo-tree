@@ -26,11 +26,29 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      # コード署名 / notarization は v0.1 では扱わない (自分用配布)
+      # コード署名 / notarization は v0.1 では扱わない (自分用配布)。
+      # tag push = リリース公開 (scripts/install.sh|ps1 が latest/download を参照するため draft にしない)
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "pomo-tree ${{ github.ref_name }}"
-          releaseDraft: true
+
+      # ワンライナー installer 用にバージョン非依存の固定名アセットを追加で上げる
+      - name: Upload fixed-name asset (macOS .app tarball)
+        if: matrix.platform == 'macos-latest'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tar -czf pomo-tree_macos_aarch64.app.tar.gz -C src-tauri/target/release/bundle/macos pomo-tree.app
+          gh release upload "${{ github.ref_name }}" pomo-tree_macos_aarch64.app.tar.gz --clobber
+
+      - name: Upload fixed-name asset (Windows setup exe)
+        if: matrix.platform == 'windows-latest'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp src-tauri/target/release/bundle/nsis/*-setup.exe pomo-tree_windows_x64-setup.exe
+          gh release upload "${{ github.ref_name }}" pomo-tree_windows_x64-setup.exe --clobber
