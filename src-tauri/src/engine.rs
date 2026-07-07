@@ -19,7 +19,10 @@ use crate::{
 pub const MENU_TOGGLE: &str = "toggle";
 pub const MENU_SKIP: &str = "skip";
 pub const MENU_RESET: &str = "reset";
+pub const MENU_SETTINGS: &str = "settings";
 pub const MENU_QUIT: &str = "quit";
+
+pub const SETTINGS_WINDOW: &str = "main";
 
 const TICK_INTERVAL: Duration = Duration::from_millis(500);
 
@@ -36,6 +39,14 @@ pub struct AppState {
 pub fn handle_menu_event(app: &AppHandle, id: &str) {
     if id == MENU_QUIT {
         app.exit(0);
+        return;
+    }
+
+    if id == MENU_SETTINGS {
+        if let Some(window) = app.get_webview_window(SETTINGS_WINDOW) {
+            let _ = window.show();
+            let _ = window.set_focus();
+        }
         return;
     }
 
@@ -100,6 +111,13 @@ pub fn spawn_ticker(app: AppHandle) {
 
         sync_ui(&app, &timer, &state.toggle_item, now);
     });
+}
+
+/// 設定変更コマンドなど、メニュー / ticker 以外の契機からの表示更新に使う
+pub fn refresh_ui(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    let timer = state.timer.lock().unwrap();
+    sync_ui(app, &timer, &state.toggle_item, Instant::now());
 }
 
 fn sync_ui(app: &AppHandle, timer: &Timer, toggle_item: &MenuItem<Wry>, now: Instant) {

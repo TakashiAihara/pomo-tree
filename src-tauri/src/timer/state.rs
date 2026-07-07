@@ -179,6 +179,16 @@ impl Timer {
         })
     }
 
+    /// 設定変更を反映する。Idle 中は現フェーズの残り時間を新設定で引き直し、
+    /// Running/Paused 中のフェーズは触らず次フェーズから新しい長さを使う
+    /// (進行中の残り時間が突然変わると混乱するため)。
+    pub fn update_config(&mut self, config: TimerConfig) {
+        self.config = config;
+        if self.status == Status::Idle {
+            self.remaining = self.duration_of(self.phase);
+        }
+    }
+
     fn enter_idle(&mut self, phase: Phase) {
         self.phase = phase;
         self.remaining = self.duration_of(phase);
@@ -393,6 +403,36 @@ mod tests {
         assert_eq!(timer.phase(), Phase::Work);
         assert_eq!(timer.status(), Status::Idle);
         assert_eq!(timer.remaining(at_end), secs(1500));
+    }
+
+    #[test]
+    fn update_config_refreshes_remaining_while_idle() {
+        let (mut timer, now) = new_timer();
+
+        let mut config = test_config();
+        config.work = secs(3000);
+        timer.update_config(config);
+
+        assert_eq!(timer.remaining(now), secs(3000));
+    }
+
+    #[test]
+    fn update_config_keeps_running_phase_untouched() {
+        let (mut timer, now) = new_timer();
+        timer.start(now);
+
+        let mut config = test_config();
+        config.work = secs(3000);
+        config.short_break = secs(600);
+        timer.update_config(config);
+
+        // 進行中フェーズは旧設定のまま満了する
+        assert_eq!(timer.remaining(now + secs(100)), secs(1400));
+        let event = timer.poll(now + secs(1500)).expect("should complete");
+        assert_eq!(event.next, Phase::ShortBreak);
+
+        // 次フェーズからは新設定の長さになる
+        assert_eq!(timer.remaining(now + secs(1500)), secs(600));
     }
 
     #[test]
