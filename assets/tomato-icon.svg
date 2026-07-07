@@ -1,0 +1,24 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- squircle background -->
+  <rect x="64" y="64" width="896" height="896" rx="208" fill="#FDF3E3"/>
+
+  <!-- tomato body -->
+  <ellipse cx="512" cy="596" rx="316" ry="290" fill="#E5484D"/>
+  <!-- bottom shade -->
+  <path d="M 220 660 A 300 240 0 0 0 804 660 A 316 290 0 0 1 220 660 Z" fill="#CC3B41"/>
+  <!-- highlight -->
+  <ellipse cx="392" cy="478" rx="82" ry="50" fill="#F0787D" transform="rotate(-24 392 478)"/>
+
+  <!-- calyx (leaf star): 6 rotated petals around the top -->
+  <g fill="#2F9E44">
+    <g transform="translate(512 348)">
+      <ellipse rx="34" ry="120" transform="rotate(0) translate(0 -60)"/>
+      <ellipse rx="34" ry="110" transform="rotate(58) translate(0 -66)"/>
+      <ellipse rx="34" ry="110" transform="rotate(-58) translate(0 -66)"/>
+      <ellipse rx="34" ry="104" transform="rotate(115) translate(0 -70)"/>
+      <ellipse rx="34" ry="104" transform="rotate(-115) translate(0 -70)"/>
+    </g>
+  </g>
+  <!-- stem -->
+  <rect x="494" y="196" width="36" height="96" rx="18" fill="#2B8A3E" transform="rotate(8 512 244)"/>
+</svg>
