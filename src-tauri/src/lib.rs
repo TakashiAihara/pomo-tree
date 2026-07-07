@@ -1,4 +1,6 @@
 mod engine;
+mod history;
+mod notify;
 pub mod timer;
 mod tray;
 
@@ -16,6 +18,7 @@ use timer::{Timer, TimerConfig};
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             // メニューバー専用アプリとして Dock に出さない
             #[cfg(target_os = "macos")]
@@ -49,9 +52,13 @@ pub fn run() {
 
             tray.build(app)?;
 
+            let history_path = app.path().app_data_dir()?.join(history::HISTORY_FILE);
+
             app.manage(engine::AppState {
                 timer: Mutex::new(timer),
                 toggle_item: toggle,
+                history: history::HistoryWriter::new(history_path),
+                session_started_at: Mutex::new(None),
             });
             engine::spawn_ticker(app.handle().clone());
 
